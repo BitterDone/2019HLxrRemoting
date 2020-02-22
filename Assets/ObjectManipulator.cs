@@ -15,39 +15,82 @@ public class ObjectManipulator : MonoBehaviour
 
 		MakeBlockMan();
 		int index = 0;
-		foreach (GameObject go in blockmanArray)
-		{
-			go.SetActive(true);
-			go.transform.position = GetJointVector(index);
-			index++;
-		}
-		print("0Initialized");
+
+        foreach (GameObject go in blockmanArray)
+        {
+            go.SetActive(true);
+            go.transform.position = GetJointVector(index);
+            index++;
+        }
+
+        GameObject root = new GameObject("Blockman Root");//create root for block man, just an empty gameobjecct, we want it to be position at the same spot as the pelvis but at y = 0
+        Vector3 pelvisPos = blockmanArray[0].transform.position; //get pelvis position
+        root.transform.position = new Vector3(pelvisPos.x, 0, pelvisPos.z);//set root position on y=0 below pelvis
+        ParentBlockManToRoot(root.transform); //parent all blocks to root
+        root.transform.forward = -Camera.main.transform.forward;//flip root around to invert
+
+        print("Initialized");
 	}
 
     // Update is called once per frame
     void Update()
     {
-		rotateChildCubes();
-		// flipBlockman();
+		//rotateChildCubes();
+		//flipBlockman();
 	}
+    #region not being used right now
 
-	void rotateChildCubes()
-	{
-		if (frame > 360) { frame = 0; }
-		float rotationStep = frame % 360f;
-		// Debug.Log("rotationStep: " + rotationStep);
+    void UpdateBlockman()
+    {
+        int index = -1;
+        foreach (string joint in new[] { "" })
+        {
+            index++;
+            string[] jointPositionQuat = joint.Split('#');
 
-		int index = 0;
-		foreach (GameObject go in blockmanArray)
-		{
-			go.transform.Rotate(0.0f, rotationStep, 0.0f, Space.Self);
-			// go.transform.rotation = Quaternion.Euler(0, 90, 0);
-			index++;
-		}
-		frame++;
-	}
+            try
+            {
+                float x = float.Parse(jointPositionQuat[0].Replace("@", string.Empty));
+                float y = float.Parse(jointPositionQuat[1]);
+                float z = float.Parse(jointPositionQuat[2]);
 
-	void flipBlockman()
+                float qw = float.Parse(jointPositionQuat[3]);
+                float qx = float.Parse(jointPositionQuat[4]);
+                float qy = float.Parse(jointPositionQuat[5]);
+                float qz = float.Parse(jointPositionQuat[6]);
+
+                Vector3 v = new Vector3(x, -y, z) * 0.004f;
+                Quaternion r = new Quaternion(qx, qy, qz, qw);
+
+                GameObject obj = blockmanArray[index];
+                obj.transform.SetPositionAndRotation(v, r);
+            }
+            catch (Exception e)
+            {
+                Debug.Log("jointPositionQuat: " + jointPositionQuat);
+                Debug.LogError(e.GetBaseException().ToString());
+                Debug.LogError(e.ToString());
+                Debug.LogError(e.Message);
+            }
+        }
+    }
+    //void rotateChildCubes()
+    //{
+    //	if (frame > 360) { frame = 0; }
+    //	float rotationStep = frame % 360f;
+    //	// Debug.Log("rotationStep: " + rotationStep);
+
+    //	int index = 0;
+    //	foreach (GameObject go in blockmanArray)
+    //	{
+    //		go.transform.Rotate(0.0f, rotationStep, 0.0f, Space.Self);
+    //		// go.transform.rotation = Quaternion.Euler(0, 90, 0);
+    //		index++;
+    //	}
+    //	frame++;
+    //}
+
+    void flipBlockman()
 	{
 		if (frame < 360) { frame = 0; }
 		float rotationStep = frame % 360f;
@@ -67,8 +110,9 @@ public class ObjectManipulator : MonoBehaviour
 			index++;
 		}
 	}
-
-	Vector3 GetJointVector(int jointIndex)
+    #endregion
+    #region  joint data
+    Vector3 GetJointVector(int jointIndex)
 	{
 		Vector3[] joints = new[]{
 			new Vector3(0.3f, 0.3f, 8.3f),
@@ -101,6 +145,7 @@ public class ObjectManipulator : MonoBehaviour
 
 		return joints[jointIndex];
 	}
+
 	string GetJointName(int jointIndex)
 	{
 		string[] joints = new[]{
@@ -137,45 +182,11 @@ public class ObjectManipulator : MonoBehaviour
 
 		return joints[jointIndex];
 	}
-
-	void UpdateBlockman()
-	{
-		int index = -1;
-		foreach (string joint in new[] { "" })
-		{
-			index++;
-			string[] jointPositionQuat = joint.Split('#');
-
-			try
-			{
-				float x = float.Parse(jointPositionQuat[0].Replace("@", string.Empty));
-				float y = float.Parse(jointPositionQuat[1]);
-				float z = float.Parse(jointPositionQuat[2]);
-
-				float qw = float.Parse(jointPositionQuat[3]);
-				float qx = float.Parse(jointPositionQuat[4]);
-				float qy = float.Parse(jointPositionQuat[5]);
-				float qz = float.Parse(jointPositionQuat[6]);
-
-				Vector3 v = new Vector3(x, -y, z) * 0.004f;
-				Quaternion r = new Quaternion(qx, qy, qz, qw);
-
-				GameObject obj = blockmanArray[index];
-				obj.transform.SetPositionAndRotation(v, r);
-			}
-			catch (Exception e)
-			{
-				Debug.Log("jointPositionQuat: " + jointPositionQuat);
-				Debug.LogError(e.GetBaseException().ToString());
-				Debug.LogError(e.ToString());
-				Debug.LogError(e.Message);
-			}
-		}
-	}
+    #endregion
 
 	void MakeBlockMan()
 	{
-		int numberOfJoints = 26; // 32; //  (int)JointId.Count;
+		int numberOfJoints = 20; //don't need nose, eyes or ears yet// 32; //  (int)JointId.Count;
 
 		blockmanArray = new GameObject[numberOfJoints];
 
@@ -190,4 +201,12 @@ public class ObjectManipulator : MonoBehaviour
 			blockmanArray[i] = jointCube;
 		}
 	}
+
+    void ParentBlockManToRoot(Transform parent)
+    {
+        foreach (GameObject g in blockmanArray)
+        {
+            g.transform.parent = parent;
+        }
+    }
 }
