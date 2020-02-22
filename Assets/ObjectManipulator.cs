@@ -33,7 +33,7 @@ public class ObjectManipulator : MonoBehaviour
 
 	void rotateChildCubes()
 	{
-		if (frame < 360) { frame = 0; }
+		if (frame > 360) { frame = 0; }
 		float rotationStep = frame % 360f;
 		// Debug.Log("rotationStep: " + rotationStep);
 
